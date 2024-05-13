@@ -9,12 +9,12 @@
 -- 1.b
 
 ALTER TABLE PERSONNE
-    ADD PRIMARY KEY (numPers);
+    ADD CONSTRAINT pk_pers_numpers PRIMARY KEY (numPers);
     
 -- 1.c
 
 ALTER TABLE PAYS
-    ADD PRIMARY KEY (cdPays);
+    ADD CONSTRAINT pk_pays_cdpays PRIMARY KEY (cdPays);
     
 -- 1.d
 
@@ -28,14 +28,21 @@ WHERE
     
 SAVEPOINT countrynames1;
     
--- Enlever les espaces Ã  la fin des noms de pays
+-- requête qui permet d'enlever les espaces superflus à la fin des noms français
+-- de certains pays grâce aux fonctions SUBSTR et LENGTH
 UPDATE PAYS
-SET nomAng = RTRIM(nomAng);
+SET nomFr = SUBSTR(nomFr, 1, LENGTH(nomFr) - 1)
+WHERE SUBSTR(nomFr, LENGTH(nomFr), 1) = ' ';
 
-UPDATE Pays
-SET nomFr = RTRIM(nomFr);
+-- requête qui permet d'enlever les espaces superflus à la fin des noms anglais
+-- de certains pays grâce aux fonctions SUBSTR et LENGTH
+UPDATE PAYS
+SET nomAng = SUBSTR(nomAng, 1, LENGTH(nomAng) - 1)
+WHERE SUBSTR(nomAng, LENGTH(nomAng), 1) = ' ';
 
 
+-- requêtes qui permetent de rectifier le nom du pays en utilisant
+-- le nom anglais de la table PAYS
 -- 1) United States of America
 UPDATE PERSONNE    
 SET
@@ -53,13 +60,11 @@ WHERE
     
 -- 3) Vietnam
 
-UPDATE PAYS    
-SET
-    nomAng = 'Vietnam'
-WHERE
-    nomAng = 'Viet Nam';   
-    
-
+UPDATE PERSONNE
+SET 
+    PAYS = 'Viet Nam'
+WHERE 
+    PAYS = 'Vietnam';
    
 -- 4) UK 
 
@@ -129,13 +134,15 @@ ORDER BY
 -- R3
 
 SELECT 
-    c.nomFr "PAYS",
-    COUNT(*) "NB PERSONNES"
+    c.nomFr AS "PAYS",
+    COUNT(*) AS "NB PERSONNES"
 FROM
     PERSONNE p
     JOIN PAYS c ON (c.cdPays = p.cdPays) 
 GROUP BY
     c.nomFr
+HAVING
+    COUNT(*) >= 8
 ORDER BY
     c.nomFr;
     
@@ -204,12 +211,3 @@ GROUP BY
     c.nomFr
 ORDER BY 
     "NB PERSONNES" DESC;
-
-
-
-
-                
-                
-
-        
-        
