@@ -1,10 +1,10 @@
-/* SAÉ MS204
+/* SAÃ MS204
  * PARTIE 1
  * ARIDORY MALCOLM, VIDAL MARTIN
  * LOGIN : ARID0002
  */
  
--- 1 Génération du jeu de données
+-- 1 Génération du jeu de donnÃ©es
 
 -- 1.b
 
@@ -28,22 +28,26 @@ WHERE
     
 SAVEPOINT countrynames1;
     
--- requ�te qui permet d'enlever les espaces superflus � la fin des noms fran�ais
--- de certains pays gr�ce aux fonctions SUBSTR et LENGTH
+-- Requête permettant d'enlever les espaces superflus à la fin des noms français
+-- de certains pays grâce aux fonctions SUBSTR et LENGTH
+
 UPDATE PAYS
 SET nomFr = SUBSTR(nomFr, 1, LENGTH(nomFr) - 1)
 WHERE SUBSTR(nomFr, LENGTH(nomFr), 1) = ' ';
 
--- requ�te qui permet d'enlever les espaces superflus � la fin des noms anglais
--- de certains pays gr�ce aux fonctions SUBSTR et LENGTH
+-- Requête permettant d'enlever les espaces superflus à la fin des noms anglais
+-- de certains pays grâce aux fonctions SUBSTR et LENGTH
+
 UPDATE PAYS
 SET nomAng = SUBSTR(nomAng, 1, LENGTH(nomAng) - 1)
 WHERE SUBSTR(nomAng, LENGTH(nomAng), 1) = ' ';
 
 
--- requ�tes qui permetent de rectifier le nom du pays en utilisant
+-- Requêtes permettant de rectifier le nom du pays en utilisant
 -- le nom anglais de la table PAYS
+
 -- 1) United States of America
+
 UPDATE PERSONNE    
 SET
     PAYS = 'United States of America'
@@ -101,7 +105,7 @@ ALTER TABLE personne
       
         
 -- DELETE FROM pays WHERE nomAng = 'France';
--- Violation de contrainte d'intégrité : l'opération a été empêchée
+-- Violation de contrainte d'intérité : l'opération a été empêchée
 -- pour éviter d'avoir des enregistrements orphelins dans la table PERSONNE
 
 
@@ -150,7 +154,7 @@ ORDER BY
 
 SELECT 
     nomPers "NOM", 
-    pnomPers "PRÉNOM"
+    pnomPers "PRÉNOM"
 FROM 
     PERSONNE
 WHERE 
