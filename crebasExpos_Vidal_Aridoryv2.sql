@@ -112,3 +112,32 @@ create table Achat
          references PERSONNE (numPers)
 );
 
+/*==============================================================*/
+/* Table : TYPEOEUVRE                                           */
+/*==============================================================*/
+CREATE TABLE TYPEOEUVRE (
+    numTpEvr INTEGER NOT NULL,
+    libTpEvr VARCHAR2(30) NOT NULL,
+    constraint PK_TYPEOEUVRE primary key (numTpEvr)
+);
+
+/*==============================================================*/
+/* Table : ARTISTE                                              */
+/*==============================================================*/
+CREATE TABLE ARTIST
+AS SELECT 
+
+
+/*==============================================================*/
+/* Table : OEUVRE                                               */
+/*==============================================================*/
+CREATE TABLE OEUVRE (
+    numEvr INTEGER NOT NULL,
+    numArt INTEGER NOT NULL,
+    numTpEvr INTEGER NOT NULL,
+    titre VARCHAR2(50) NOT NULL,
+    anneeCr INTEGER,
+    constraint PK_OEUVRE primary key (numTpEvr)
+    constraint FK_NUMTPEVR_OEUVRE FOREIGN KEY (numTpEvr) REFERENCES TYPEOEUVRE(numTpEvr) ON DELETE SET NULL
+    constraint FK_NUMART_OEUVRE FOREIGN KEY (numArt) REFERENCES ARTIST(numArt) ON DELETE CASCADE
+);
