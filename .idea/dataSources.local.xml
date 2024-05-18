@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal" created-in="DB-241.17011.41">
+    <data-source name="bd19" uuid="7b48eebf-8c14-4a65-926b-48306dad7102">
+      <database-info product="Oracle" version="Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production" jdbc-version="11.2" driver-name="Oracle JDBC driver" driver-version="11.2.0.4.0" dbms="ORACLE" exact-version="19.0.0.0.0" exact-driver-version="11.2">
+        <extra-name-characters>$#</extra-name-characters>
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="upper" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>arid0002</user-name>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema">
+            <name qname="@" />
+            <name qname="LOCVEC" />
+            <name qname="MINIGOLF" />
+            <name qname="PUBLIC" />
+            <name qname="TESTSAELD" />
+          </node>
+        </introspection-scope>
+      </schema-mapping>
+      <load-sources>user_and_system_sources</load-sources>
+    </data-source>
+  </component>
+</project>
