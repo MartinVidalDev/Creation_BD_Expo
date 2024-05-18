@@ -16,6 +16,13 @@ drop table LIEU cascade constraints;
 
 drop table TYPELIEU cascade constraints;
 
+drop table OEUVRE cascade constraints;
+
+drop table TYPEOEUVRE cascade constraints;
+
+drop table ARTISTE cascade constraints;
+
+
 /*==============================================================*/
 /* Table : TYPELIEU                                             */
 /*==============================================================*/
@@ -78,12 +85,14 @@ create table EXPO
    dateDeb              DATE                 not null,
    dateFin              DATE,
    resume               VARCHAR2(100),
-   tarif                NUMBER(4,2)         
+   tarif                NUMBER(4,2)
       constraint CKC_TARIF_EXPO check (tarif is null or (tarif >= 0)),
    tarifR               NUMBER(4,2)         
       constraint CKC_TARIFR_EXPO check (tarifR is null or (tarifR >= 0)),
    choix                INTEGER             
       constraint CKC_CHOIX_EXPO check (choix is null or (choix in (NULL,1))),
+   dureeEv GENERATED ALWAYS AS (CASE WHEN dateFin IS NULL THEN NULL ELSE dateFin - dateDeb END) VIRTUAL,
+
    constraint PK_EXPO primary key (numLieu, numExpo),
    constraint FK_EXPO_LI_LIEU foreign key (numLieu)
          references LIEU (numLieu),
@@ -103,8 +112,8 @@ create table Achat
    dateAchat            DATE                 not null,
    nbBil                INTEGER,
    nbBilTR              INTEGER,
-   modeReglt            CHAR(3)             
-      constraint CKC_MODEREGLT_ACHAT check (modeReglt is null or (modeReglt in ('CB','CHQ','ESP'))),
+   modeReglt            CHAR(3),
+   constraint CKC_MODEREGLT_ACHAT check (modeReglt is null or (modeReglt in ('CB','CHQ','ESP'))),
    constraint PK_ACHAT primary key (numLieu, numExpo, numPers, dateAchat),
    constraint FK_ACHAT_LI_ACHAT__EXPO foreign key (numLieu, numExpo)
          references EXPO (numLieu, numExpo),
@@ -124,8 +133,17 @@ CREATE TABLE TYPEOEUVRE (
 /*==============================================================*/
 /* Table : ARTISTE                                              */
 /*==============================================================*/
-CREATE TABLE ARTIST
-AS SELECT 
+CREATE TABLE ARTISTE AS
+SELECT
+    TO_NUMBER(ai.cdArt) as numArt,
+    p.cdPays,
+    ai.nom as nomArt,
+    ai.prnm as pnomArt
+FROM
+    TESTSAELD.ARTISTE_IMPORT ai
+        LEFT JOIN PAYS p ON ai.pays = upper(p.nomFr);
+
+ALTER TABLE ARTISTE ADD CONSTRAINT PK_ARTISTE PRIMARY KEY (numArt);
 
 
 /*==============================================================*/
@@ -137,7 +155,43 @@ CREATE TABLE OEUVRE (
     numTpEvr INTEGER NOT NULL,
     titre VARCHAR2(50) NOT NULL,
     anneeCr INTEGER,
-    constraint PK_OEUVRE primary key (numTpEvr)
-    constraint FK_NUMTPEVR_OEUVRE FOREIGN KEY (numTpEvr) REFERENCES TYPEOEUVRE(numTpEvr) ON DELETE SET NULL
-    constraint FK_NUMART_OEUVRE FOREIGN KEY (numArt) REFERENCES ARTIST(numArt) ON DELETE CASCADE
+    constraint PK_OEUVRE primary key (numEvr),
+    constraint FK_NUMTPEVR_OEUVRE FOREIGN KEY (numTpEvr) REFERENCES TYPEOEUVRE(numTpEvr) ON DELETE SET NULL,
+    constraint FK_NUMART_OEUVRE FOREIGN KEY (numArt) REFERENCES ARTISTE(numArt) ON DELETE CASCADE
+
 );
+
+/*==============================================================*/
+/* Création des index                                           */
+/*==============================================================*/
+
+-- Index sur les clés étrangères
+CREATE INDEX idx_expo_numLieu ON EXPO (numLieu);
+CREATE INDEX idx_expo_numGenre ON EXPO (numGenre);
+CREATE INDEX idx_lieu_numDpt ON LIEU (numDpt);
+CREATE INDEX idx_lieu_numTpLieu ON LIEU (numTpLieu);
+CREATE INDEX idx_achat_numLieu ON Achat (numLieu);
+CREATE INDEX idx_achat_numExpo ON Achat (numExpo);
+CREATE INDEX idx_achat_numPers ON Achat (numPers);
+CREATE INDEX idx_oeuvre_numArt ON OEUVRE (numArt);
+CREATE INDEX idx_oeuvre_numTpEvr ON OEUVRE (numTpEvr);
+
+-- Index sur le nom des lieux
+CREATE INDEX idx_lieu_nomLieu ON LIEU (nomLieu);
+
+-- Index sur les noms-prénoms des personnes
+--CREATE INDEX idx_personne_nomPers ON PERSONNE (nomPers);
+--CREATE INDEX idx_personne_pnomPers ON PERSONNE (pnomPers);
+
+-- Index sur le titre des œuvres
+CREATE INDEX idx_oeuvre_titre ON OEUVRE (titre);
+
+/*==============================================================*/
+/* Contrainte de domaine de notre choix                         */
+/*==============================================================*/
+
+-- Une contrainte pertinente peut être ajoutée sur le numéro de département, en s'assurant
+-- qu'on entre bien un département d'Île-de-France
+
+ALTER TABLE LIEU
+    ADD CONSTRAINT CKC_NUMDPT_LIEU CHECK (NUMDPT IN ('75', '77', '78', '91', '92', '93', '94', '95'));
