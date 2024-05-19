@@ -82,10 +82,10 @@ create table EXPO
    numLieu              INTEGER              not null,
    numExpo              INTEGER              not null,
    numGenre             INTEGER,
-   titreExpo            VARCHAR2(30)         not null,
+   titreExpo            VARCHAR2(128)         not null,
    dateDeb              DATE                 not null,
    dateFin              DATE,
-   resume               VARCHAR2(100),
+   resume               VARCHAR2(256),
    tarif                NUMBER(4,2)
       constraint CKC_TARIF_EXPO check (tarif is null or (tarif >= 0)),
    tarifR               NUMBER(4,2)         

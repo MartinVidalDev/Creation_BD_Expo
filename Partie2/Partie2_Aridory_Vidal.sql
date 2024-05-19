@@ -40,4 +40,72 @@ INSERT INTO GENRE VALUES (9, 'Photographie');
 INSERT INTO GENRE VALUES (10, 'Salons');
 INSERT INTO GENRE VALUES (11, 'Sciences et Techniques');
 
+-- 4.b : import des données de lieux.csv
+
+-- 4.c : on importe typeoeuvre, puis oeuvre puis expo
+
+-- TYPEOEUVRE
+
+INSERT INTO TYPEOEUVRE
+    (NUMTPEVR, LIBTPEVR)
+SELECT
+    NUMTPEVR,
+    LIBTPEVR
+FROM
+    TESTSAELD.TYPEOEUVRE_IMPORT;
+
+-- OEUVRE
+
+INSERT INTO OEUVRE
+(NUMEVR, NUMART, NUMTPEVR, TITRE, ANNEECR)
+SELECT
+    OI.NUMEVR,
+    OI.NUMART,
+    OI.NUMTPEVR,
+    OI.TITRE,
+    OI.ANNEECR
+FROM
+    TESTSAELD.OEUVRE_IMPORT OI
+    INNER JOIN TYPEOEUVRE TPO ON OI.NUMTPEVR = TPO.NUMTPEVR;
+
+-- EXPO
+
+INSERT INTO EXPO
+(NUMLIEU, NUMEXPO, NUMGENRE, TITREEXPO, DATEDEB, DATEFIN, RESUME, TARIF, TARIFR, CHOIX)
+SELECT
+    EI.NUMLIEU,
+    EI.NUMEXPO,
+    EI.NUMGENRE,
+    EI.TITREEXPO,
+    EI.DATEDEB,
+    EI.DATEFIN,'ai'
+    EI.RESUME,
+    EI.TARIF,
+    EI.TARIFREDUIT,
+    EI.CHOIX
+FROM
+    TESTSAELD.EXPO_IMPORT EI
+    INNER JOIN LIEU LI ON (EI.NUMLIEU = LI.NUMLIEU);
+    
+-- 4.d
+
+ALTER TABLE PRESENTATION
+ADD CONSTRAINT 
+    FK_PRESENTATION_NUMEVR FOREIGN KEY (numEvr) REFERENCES OEUVRE(numEvr);
+
+ALTER TABLE PRESENTATION
+ADD CONSTRAINT 
+    FK_PRESENTATION_EXPO FOREIGN KEY (numLieu, numExpo) REFERENCES EXPO(numLieu, numExpo);
+    
+
+-- 4.e
+
+-- Insertions des données pour la personne (1) qui a été voir toutes les expos du centre Pompudou
+
+INSERT INTO ACHAT (numLieu, numExpo, numPers, dateAchat, nbBil, nbBilTR, modeReglt)
+SELECT numLieu, numExpo, 1, SYSDATE, 1, 0, 'CB'
+FROM EXPO
+WHERE numLieu = (SELECT numLieu FROM LIEU WHERE nomLieu LIKE 'Centre Pompidou');
+
+-- Insertion d'un achat en dehors de Paris
 
