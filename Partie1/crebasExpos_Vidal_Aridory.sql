@@ -146,6 +146,16 @@ FROM
 
 ALTER TABLE ARTISTE ADD CONSTRAINT PK_ARTISTE PRIMARY KEY (numArt);
 
+-- Ajout de la Bavière comme Allemagne
+
+UPDATE ARTISTE
+SET
+    cdPays = 'DEU'
+WHERE
+    numArt IN ( SELECT cdArt
+                FROM TESTSAELD.ARTISTE_IMPORT
+                WHERE UPPER(PAYS) LIKE "BAVIERE");
+
 
 /*==============================================================*/
 /* Table : OEUVRE                                               */
