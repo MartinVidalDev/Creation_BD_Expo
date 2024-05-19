@@ -109,3 +109,7 @@ WHERE numLieu = (SELECT numLieu FROM LIEU WHERE nomLieu LIKE 'Centre Pompidou');
 
 -- Insertion d'un achat en dehors de Paris
 
+
+
+-- Insertion d'autres achats
+

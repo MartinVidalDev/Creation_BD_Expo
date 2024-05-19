@@ -155,6 +155,12 @@ WHERE
     numArt IN ( SELECT cdArt
                 FROM TESTSAELD.ARTISTE_IMPORT
                 WHERE UPPER(PAYS) LIKE "BAVIERE");
+                
+UPDATE ARTISTE
+SET cdPays = 'RUS'
+WHERE numArt IN ( SELECT cdArt 
+                FROM  TESTSAELD.ARTISTE_IMPORT
+                WHERE UPPER(pays) = 'RUSSIE');
 
 
 /*==============================================================*/
