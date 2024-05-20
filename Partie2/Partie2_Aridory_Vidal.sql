@@ -78,7 +78,7 @@ SELECT
     EI.NUMGENRE,
     EI.TITREEXPO,
     EI.DATEDEB,
-    EI.DATEFIN,'ai'
+    EI.DATEFIN,
     EI.RESUME,
     EI.TARIF,
     EI.TARIFREDUIT,
@@ -86,30 +86,366 @@ SELECT
 FROM
     TESTSAELD.EXPO_IMPORT EI
     INNER JOIN LIEU LI ON (EI.NUMLIEU = LI.NUMLIEU);
-    
+
 -- 4.d
 
 ALTER TABLE PRESENTATION
-ADD CONSTRAINT 
+ADD CONSTRAINT
     FK_PRESENTATION_NUMEVR FOREIGN KEY (numEvr) REFERENCES OEUVRE(numEvr);
 
 ALTER TABLE PRESENTATION
-ADD CONSTRAINT 
+ADD CONSTRAINT
     FK_PRESENTATION_EXPO FOREIGN KEY (numLieu, numExpo) REFERENCES EXPO(numLieu, numExpo);
-    
+
 
 -- 4.e
 
--- Insertions des données pour la personne (1) qui a été voir toutes les expos du centre Pompudou
+-- Insertions des données pour la personne (1) qui a été voir toutes les expos du centre Pompidou
 
 INSERT INTO ACHAT (numLieu, numExpo, numPers, dateAchat, nbBil, nbBilTR, modeReglt)
 SELECT numLieu, numExpo, 1, SYSDATE, 1, 0, 'CB'
 FROM EXPO
 WHERE numLieu = (SELECT numLieu FROM LIEU WHERE nomLieu LIKE 'Centre Pompidou');
 
--- Insertion d'un achat en dehors de Paris
+-- Insertion de deux achats de la personne (2) en dehors de Paris
+
+INSERT INTO ACHAT
+SELECT E.numLieu, numExpo, 2, SYSDATE-30, 0, 1, 'CHQ'
+FROM EXPO E JOIN LIEU L ON E.NUMLIEU = L.NUMLIEU
+WHERE UPPER(L.VILLELIEU) <> 'PARIS' AND ROWNUM IN (1, 2);
+
+-- Insertion d'un achat après la fin de l'exposition (Personne 3)
+
+INSERT INTO ACHAT
+SELECT E.NUMLIEU, E.NUMEXPO, 3, E.DATEFIN+10, 2, 0, 'CB'
+FROM EXPO E
+WHERE ROWNUM = 1;
+
+-- INSERTION D'AUTRES ACHATS (Personnes 5, 8, 13, 21, 34, 55, 89, 144)
+
+-- On va utiliser des expositions sélectionnées aléatoirement avec la fonction oracle DBMS_RANDOM
+-- https://docs.oracle.com/database/timesten-18.1/TTPLP/d_random.htm#TTPLP040
+
+-- PERSONNE 5
+
+INSERT INTO ACHAT
+SELECT *
+FROM (
+    SELECT E.NUMLIEU, E.NUMEXPO, 5, SYSDATE-90, 0, 1, 'ESP'
+    FROM EXPO E
+    ORDER BY DBMS_RANDOM.VALUE)
+WHERE
+    ROWNUM < 4;
+
+-- PERSONNE 8
+
+INSERT INTO ACHAT
+
+SELECT *
+FROM (
+    SELECT E.NUMLIEU, E.NUMEXPO, 8, SYSDATE-60, 2, 1, 'CB'
+    FROM EXPO E
+    ORDER BY DBMS_RANDOM.VALUE)
+WHERE
+    ROWNUM < 4;
 
 
+-- PERSONNE 13    
 
--- Insertion d'autres achats
+INSERT INTO ACHAT
 
+SELECT *
+FROM (
+    SELECT E.NUMLIEU, E.NUMEXPO, 13, SYSDATE+20, 2, 1, 'CB'
+    FROM EXPO E
+    ORDER BY DATEFIN DESC)
+WHERE
+    ROWNUM < 5;
+
+
+-- PERSONNE 21
+
+INSERT INTO ACHAT
+
+SELECT *
+FROM (
+    SELECT E.NUMLIEU, E.NUMEXPO, 21, SYSDATE-16, 1, 0, 'ESP'
+    FROM EXPO E
+    ORDER BY DBMS_RANDOM.VALUE)
+WHERE
+    ROWNUM = 1;
+
+-- PERSONNE 34    
+
+INSERT INTO ACHAT
+
+SELECT *
+FROM (
+    SELECT E.NUMLIEU, E.NUMEXPO, 34, SYSDATE-55, 1, 0, 'CB'
+    FROM EXPO E
+    ORDER BY DBMS_RANDOM.VALUE)
+WHERE
+    ROWNUM < 9;
+
+-- PERSONNE 55
+
+INSERT INTO ACHAT
+
+SELECT *
+FROM (
+    SELECT E.NUMLIEU, E.NUMEXPO, 55, SYSDATE+2, 1, 0, 'CB'
+    FROM EXPO E
+    ORDER BY DBMS_RANDOM.VALUE)
+WHERE
+    ROWNUM < 3;
+
+-- PERSONNE 89
+
+INSERT INTO ACHAT
+
+SELECT *
+FROM (
+    SELECT E.NUMLIEU, E.NUMEXPO, 89, SYSDATE-144, 0, 2, 'CB'
+    FROM EXPO E
+    WHERE E.NUMGENRE = 1
+    ORDER BY DBMS_RANDOM.VALUE)
+WHERE
+    ROWNUM < 3;
+
+
+-- PERSONNE 144
+
+INSERT INTO ACHAT
+
+SELECT *
+FROM (
+    SELECT E.NUMLIEU, E.NUMEXPO, 144, SYSDATE-89, 1, 0, 'ESP'
+    FROM EXPO E
+    ORDER BY DBMS_RANDOM.VALUE)
+WHERE
+    ROWNUM < 5;
+
+
+-- 5 EXTRACTIONS DE LA BASE
+
+-- 5.a.1 -- 1 ligne
+
+SELECT DISTINCT
+    nomPers || ' ' || pnomPers "Personne"
+FROM
+    PERSONNE
+WHERE
+    numPers IN (SELECT numPers
+                FROM ACHAT
+                WHERE numLieu IN (
+                    SELECT numLieu
+                    FROM LIEU
+                    WHERE UPPER(villeLieu) NOT LIKE 'PARIS%'
+                )
+);
+
+SELECT DISTINCT
+    nomPers || ' ' || pnomPers "Personne"
+FROM
+    PERSONNE
+WHERE
+    EXISTS (SELECT 1
+            FROM
+                ACHAT
+                JOIN LIEU ON ACHAT.numLieu = LIEU.numLieu
+            WHERE
+                UPPER(villeLieu) NOT LIKE 'PARIS%'
+                AND PERSONNE.numPers = ACHAT.numPers
+);
+
+-- 5.a.2 -- 13 lignes
+
+SELECT
+    E.titreExpo,
+    G.libGenre,
+    L.nomLieu,
+    NVL(A.nbBil, 0) AS nbBil,
+    NVL(A.nbBilTR, 0) AS nbBilTR,
+    E.tarif,
+    E.tarifR AS tarifReduit,
+    (NVL(A.nbBil, 0) * E.tarif + NVL(A.nbBilTR, 0) * E.tarifR) AS recette
+FROM
+    EXPO E
+    JOIN GENRE G ON E.numGenre = G.numGenre
+    JOIN LIEU L ON E.numLieu = L.numLieu
+    LEFT JOIN ACHAT A ON E.numLieu = A.numLieu AND E.numExpo = A.numExpo
+WHERE
+    E.choix = 1
+    AND E.numGenre IN (1, 2)
+ORDER BY
+    G.libGenre;
+
+-- 5.a.3 -- 52 lignes
+
+SELECT
+    L.nomLieu Lieu,
+    E.titreExpo Exposition,
+    O.titre Oeuvre
+FROM
+    EXPO E
+    JOIN LIEU L ON E.numLieu = L.numLieu
+    JOIN GENRE G ON E.numGenre = G.numGenre
+    LEFT JOIN PRESENTATION P ON E.numLieu = P.numLieu AND E.numExpo = P.numExpo
+    LEFT JOIN OEUVRE O ON P.numEvr = O.numEvr
+WHERE
+    UPPER(L.nomLieu) LIKE 'MUSÉE%'
+    AND UPPER(G.libGenre) = 'BEAUX-ARTS'
+ORDER BY
+    L.nomLieu, E.titreExpo;
+
+-- 5.a.4 -- 4 lignes
+
+-- left join
+
+SELECT
+    O.titre
+FROM
+    OEUVRE O
+    LEFT JOIN PRESENTATION P ON O.numEvr = P.numEvr
+WHERE
+    P.numEvr IS NULL;
+
+-- not exists
+
+SELECT
+    O.titre
+FROM
+    OEUVRE O
+WHERE
+    NOT EXISTS (
+        SELECT 1
+        FROM
+            PRESENTATION P
+        WHERE
+            O.numEvr = P.numEvr
+    );
+
+-- sous requete
+
+SELECT
+    O.titre
+FROM
+    OEUVRE O
+WHERE
+    O.numEvr NOT IN (
+        SELECT numEvr
+        FROM PRESENTATION
+    );
+
+-- sous requete avec minus
+
+SELECT
+    titre
+FROM
+    OEUVRE
+WHERE
+    numEvr IN ( SELECT
+                    numEvr
+                FROM
+                    OEUVRE
+                MINUS
+                SELECT
+                    numEvr
+                FROM
+                    PRESENTATION )
+;
+
+-- 5.b) figures libres
+
+-- 5.b.5 Nombre d'œuvres présentées pour chaque exposition.
+-- 16 lignes
+
+SELECT
+    (SELECT titreExpo FROM EXPO WHERE numLieu = P.numLieu AND numExpo = P.numExpo) AS Exposition,
+    COUNT(P.numEvr) AS Nombre_Oeuvres
+FROM
+    PRESENTATION P
+GROUP BY
+    P.numLieu, P.numExpo;
+
+-- 5.b.6 tarif moyen des expos ayant commencé entre janvier et juin 2024 pour chaque genre
+-- 9 lignes
+
+SELECT
+    G.libGenre,
+    ROUND(AVG(NVL(E.tarif, 0)), 2) AS "Tarif Moyen (Normal)",
+    ROUND(AVG(NVL(E.tarifR, 0)), 2) AS "Tarif Moyen (Réduit)"
+FROM
+    GENRE G
+    LEFT JOIN EXPO E ON G.numGenre = E.numGenre
+WHERE
+    E.dateDeb BETWEEN TO_DATE('01-01-2024', 'DD-MM-YYYY') AND TO_DATE('30-06-2024', 'DD-MM-YYYY')
+GROUP BY
+    G.libGenre
+ORDER BY
+    "Tarif Moyen (Normal)" DESC;
+
+-- 5.b.7 artistes qui ont créé plus de 2 œuvres d'un même type
+-- 6 lignes
+
+SELECT
+    A.nomArt || ' ' || A.pnomArt AS Nom_Artiste,
+    T.libTpEvr AS Type_Oeuvre,
+    COUNT(O.numEvr) AS Nombre_Oeuvres
+FROM
+    OEUVRE O
+    JOIN ARTISTE A ON O.numArt = A.numArt
+    JOIN TYPEOEUVRE T ON O.numTpEvr = T.numTpEvr
+GROUP BY
+    A.nomArt || ' ' || A.pnomArt, T.libTpEvr
+HAVING
+    COUNT(O.numEvr) > 2
+ORDER BY
+    nombre_oeuvres DESC,
+    nom_artiste;
+
+-- 5.b.8
+
+-- 5.b.9 Personnes et Artistes venant de France et d'Italie
+-- 52 lignes
+
+SELECT
+    A.nomArt || ' ' || A.pnomArt AS "Nom",
+    P.nomFr "Pays"
+FROM
+    ARTISTE A
+    JOIN PAYS P ON (A.CDPAYS = P.CDPAYS)
+WHERE
+    UPPER(P.nomFr) LIKE '%ITALIE%'
+    OR UPPER(P.nomFr) LIKE '%FRANCE%'
+
+UNION
+
+SELECT
+    PE.nomPers || ' ' || PE.pnomPers,
+    P2.nomFr "Pays"
+FROM
+    PERSONNE PE
+    JOIN PAYS P2 ON (PE.CDPAYS = P2.CDPAYS)
+WHERE
+     UPPER(P2.nomFr) LIKE '%ITALIE%'
+  OR UPPER(P2.nomFr) LIKE '%FRANCE%'
+
+ORDER BY
+        "Pays",
+        "Nom";
+
+-- 5.b.10 (division) expos pour lesquelles personne n'a acheté de billet
+-- 121 lignes
+
+SELECT
+    E.numLieu,
+    E.numExpo,
+    E.titreExpo
+FROM
+    EXPO E
+WHERE
+    NOT EXISTS  (   SELECT NULL
+                    FROM ACHAT A
+                    WHERE A.numLieu = E.numLieu AND A.numExpo = E.numExpo
+);
