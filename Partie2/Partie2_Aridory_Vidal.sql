@@ -449,3 +449,32 @@ WHERE
                     FROM ACHAT A
                     WHERE A.numLieu = E.numLieu AND A.numExpo = E.numExpo
 );
+
+-- 6.a Visualisation des données
+
+CREATE VIEW VUE_EXPOSITIONS AS
+SELECT 
+    e.NUMEXPO,
+    e.TITREEXPO,
+    e.DATEDEB,
+    e.DATEFIN,
+    e.RESUME,
+    e.TARIF,
+    e.TARIFR,
+    g.LIBGENRE,
+    l.NOMLIEU,
+    l.VILLELIEU,
+    l.MISSIONS,
+    d.NOMDPT,
+    CASE 
+        WHEN e.DATEFIN IS NULL THEN NULL 
+        ELSE e.DATEFIN - e.DATEDEB 
+    END AS DUREEEV
+FROM 
+    EXPO e
+JOIN 
+    GENRE g ON e.NUMGENRE = g.NUMGENRE
+JOIN 
+    LIEU l ON e.NUMLIEU = l.NUMLIEU
+JOIN 
+    DEPARTEMENT d ON l.NUMDPT = d.NUMDPT;
