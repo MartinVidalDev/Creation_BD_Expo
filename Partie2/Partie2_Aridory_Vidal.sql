@@ -4,7 +4,10 @@
  * LOGIN : ARID0002
  */
 
--- 4 Chargement de la base INFO_EXPO
+
+/*==============================================================*/
+/* 4 CHARGEMENT DE LA BASE INFO_EXPO                            */
+/*==============================================================*/
 
 -- 4.a
 
@@ -40,7 +43,9 @@ INSERT INTO GENRE VALUES (9, 'Photographie');
 INSERT INTO GENRE VALUES (10, 'Salons');
 INSERT INTO GENRE VALUES (11, 'Sciences et Techniques');
 
+
 -- 4.b : import des données de lieux.csv
+
 
 -- 4.c : on importe typeoeuvre, puis oeuvre puis expo
 
@@ -86,6 +91,7 @@ SELECT
 FROM
     TESTSAELD.EXPO_IMPORT EI
     INNER JOIN LIEU LI ON (EI.NUMLIEU = LI.NUMLIEU);
+
 
 -- 4.d
 
@@ -226,7 +232,9 @@ WHERE
     ROWNUM < 5;
 
 
--- 5 EXTRACTIONS DE LA BASE
+/*==============================================================*/
+/* 5 EXTRACTIONS DE LA BASE                                     */
+/*==============================================================*/
 
 -- 5.a.1 -- 1 ligne
 
@@ -318,7 +326,7 @@ FROM
     OEUVRE O
 WHERE
     NOT EXISTS (
-        SELECT 1
+        SELECT NULL
         FROM
             PRESENTATION P
         WHERE
@@ -355,7 +363,8 @@ WHERE
                     PRESENTATION )
 ;
 
--- 5.b) figures libres
+
+-- 5.b figures libres
 
 -- 5.b.5 Nombre d'œuvres présentées pour chaque exposition.
 -- 16 lignes
@@ -404,7 +413,27 @@ ORDER BY
     nombre_oeuvres DESC,
     nom_artiste;
 
--- 5.b.8
+-- 5.b.8 nombre d'oeuvres exposées et nombre d'oeuvres total par artiste ayant au moins 1 oeuvre
+-- 21 lignes
+
+SELECT DISTINCT
+    A.nomArt,
+    A.pnomArt,
+    (   SELECT COUNT(*)
+        FROM OEUVRE O
+        WHERE O.numArt = A.numArt) AS "Oeuvres",
+    (   SELECT COUNT(*)
+        FROM OEUVRE O
+        WHERE O.numArt = A.numArt
+          AND O.numEvr IN (SELECT P.numEvr FROM PRESENTATION P)) AS "Oeuvres présentées"
+FROM
+    ARTISTE A
+    JOIN OEUVRE O ON A.numArt = O.numArt
+WHERE
+    O.numEvr IS NOT NULL
+ORDER BY
+    "Oeuvres" DESC,
+    "Oeuvres présentées" DESC;
 
 -- 5.b.9 Personnes et Artistes venant de France et d'Italie
 -- 52 lignes
@@ -450,7 +479,108 @@ WHERE
                     WHERE A.numLieu = E.numLieu AND A.numExpo = E.numExpo
 );
 
--- 6.a Visualisation des donn�es
+
+-- 5.c Vues et séquences
+
+CREATE SEQUENCE numPers_seq START WITH 201;
+
+INSERT INTO PERSONNE (NUMPERS, NOMPERS, PNOMPERS, DATENAIS, REGION, VILLE, CDPAYS)
+SELECT
+    numPers_seq.NEXTVAL,
+    nomPers,
+    pnomPers,
+    dateNais,
+    region,
+    ville,
+    cdPays
+FROM TESTSAELD.PERSONNE_IMPORT;
+
+SELECT * FROM PERSONNE WHERE DATENAIS < TO_DATE('01-01-1960', 'DD-MM-YYYY');
+
+DROP VIEW CHINOIS;
+
+CREATE VIEW CHINOIS AS
+SELECT
+    numPers,
+    nomPers,
+    pnomPers,
+    ville,
+    region
+FROM
+    PERSONNE
+WHERE
+    CDPAYS = 'CHN';
+
+INSERT INTO CHINOIS
+VALUES (numPers_seq.nextval, 'CHAN', 'Jacky', 'Hong Kong', 'Victoria Peak');
+
+SELECT * FROM CHINOIS; -- Jackie CHAN n'apparaît pas dans la vue car il n'a pas le cdPays chinois
+
+SELECT * FROM PERSONNE WHERE VILLE = 'Hong Kong'; -- il a cependant bien été inséré
+
+UPDATE PERSONNE
+SET CDPAYS = 'CHN'
+WHERE UPPER(VILLE) = 'HONG KONG';
+
+SELECT * FROM CHINOIS; -- Cette fois-ci, Jackie CHAN apparaît bien dans la vue CHINOIS
+
+-- Ajout de la date de naissance de Jackie CHAN
+UPDATE PERSONNE
+SET DATENAIS = TO_DATE('07-04-1954', 'DD-MM-YYYY')
+WHERE UPPER(NOMPERS) = 'CHAN' AND UPPER(PNOMPERS) = 'JACKY';
+
+-- Chinois dont la ville commence par un H
+SELECT * FROM CHINOIS WHERE VILLE LIKE 'H%';
+
+-- Chinois ayant acheté des billets pour des expositions (1 personne)
+SELECT COUNT(DISTINCT NUMPERS) FROM ACHAT WHERE NUMPERS IN (SELECT NUMPERS FROM CHINOIS);
+
+
+-- 5.d Droits et privilèges
+
+-- accès en écriture, modification et suppression de la table LIEU
+GRANT INSERT, UPDATE, DELETE ON LIEU TO vida0018;
+
+-- accès suppression et en modification de la table ACHAT.
+GRANT DELETE, UPDATE(nbBil, nbBilTR, dateAchat, modeReglt) ON ACHAT TO vida0018;
+
+
+-- accès en insertion et modification de la table EXPO
+
+CREATE VIEW EXPO_PARIS_MARS_2024 AS
+SELECT
+    numLieu,
+    numExpo,
+    titreExpo,
+    dateDeb
+FROM
+    EXPO
+WHERE
+    numLieu IN (SELECT numLieu FROM LIEU WHERE numDpt = 75)
+    AND EXTRACT(MONTH FROM dateDeb) = 3 AND EXTRACT(YEAR FROM dateDeb) = 2024;
+
+GRANT SELECT, INSERT, UPDATE ON EXPO_PARIS_MARS_2024 TO vida0018;
+GRANT SELECT ON EXPO TO vida0018;
+
+-- En tant que vida0018 :
+
+-- changement de date pour l'expo d'impressionnisme
+
+UPDATE ARID0002.EXPO_PARIS_MARS_2024
+SET DATEDEB = TO_DATE('15-05-2024', 'DD-MM-YYYY')
+WHERE UPPER(TITREEXPO) LIKE '%IMPRESSIONNISME%';
+
+-- suppression des achats faits après la date de fin de l'expo
+
+DELETE FROM ARID0002.ACHAT A
+WHERE A.DATEACHAT > (SELECT DATEFIN FROM ARID0002.EXPO E WHERE A.NUMEXPO = E.NUMEXPO AND A.NUMLIEU = E.NUMLIEU);
+
+
+/*==============================================================*/
+/* 6 VISUALISATION DES DONNÉES                                  */
+/*==============================================================*/
+
+-- 6.a Préparation et Transformation des données
 
 CREATE VIEW VUE_EXPOSITIONS AS
 SELECT 
